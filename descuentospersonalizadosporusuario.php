@@ -47,5 +47,18 @@ class DescuentosPersonalizadosPorUsuario extends Module
         return $this->display(__FILE__, 'descuentospersonalizadosporusuario.tpl');
     }
 
+    public function getContent()
+    {
+        $title = 'Configuración de descuentos por cliente';
+        $content = 'Aquí puedes configurar los descuentos personalizados por cliente';
+
+        $this->context->smarty->assign(array(
+            'title' => $title,
+            'content' => $content
+        ));
+
+        return $this->display(__FILE__, 'views/templates/admin/configuration.tpl');
+    }
+
 }
 ?>
