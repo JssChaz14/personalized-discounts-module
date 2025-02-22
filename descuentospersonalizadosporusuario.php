@@ -30,13 +30,21 @@ class DescuentosPersonalizadosPorUsuario extends Module
     public function install()
     {
         return parent::install() 
-            && $this->registerHook('actionFrontControllerSetMedia') 
-            && $this->registerHook('displayShoppingCart');
+            && $this->registerHook('displayProductAdditionalInfo');
     }
 
     public function uninstall()
     {
         return parent::uninstall();
+    }
+
+    public function hookDisplayProductAdditionalInfo($params)
+    {
+        $this->context->smarty->assign(array(
+            'descuentos_personalizados_por_usuario' => Configuration::get('DESCUENTOSPERSONALIZADOSPORUSUARIO')
+        ));
+
+        return $this->display(__FILE__, 'descuentospersonalizadosporusuario.tpl');
     }
 
 }
