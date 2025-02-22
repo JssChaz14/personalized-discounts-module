@@ -30,12 +30,31 @@ class DescuentosPersonalizadosPorUsuario extends Module
     public function install()
     {
         return parent::install() 
-            && $this->registerHook('displayProductAdditionalInfo');
+            && $this->registerHook('displayProductAdditionalInfo')
+            && $this->registerHook('actionAdminCustomersFormModifier')
+            && $this->createAdminTab();
     }
 
     public function uninstall()
     {
         return parent::uninstall();
+    }
+
+    public function createAdminTab()
+    {
+        $tab = new Tab();
+        $tab->active = 1;
+        $tab->class_name = 'AdminDescuentosPersonalizadosPorUsuario';
+        $tab->name = array();
+
+        foreach (Language::getLanguages(true) as $lang) {
+            $tab->name[$lang['id_lang']] = 'Descuentos Personalizados por Usuario';
+        }
+        $contenttab->id_parent = (int) Tab::getIdFromClassName('AdminCustomers');
+        $tab->module = $this->name;
+        $tab->icon = 'discount';
+
+        return $tab->add();
     }
 
     public function hookDisplayProductAdditionalInfo($params)
@@ -44,13 +63,35 @@ class DescuentosPersonalizadosPorUsuario extends Module
             'descuentos_personalizados_por_usuario' => Configuration::get('DESCUENTOSPERSONALIZADOSPORUSUARIO')
         ));
 
-        return $this->display(__FILE__, 'descuentospersonalizadosporusuario.tpl');
+        return $this->display(__FILE__, 'views/templates/admin/configuration.tpl');
+    }
+
+    public function hookActionAdminCustomersFormModifier(array $params)
+    {
+        $params['fields'][0]['form']['input'][] = array(
+            'type' => 'text',
+            'label' => $this->l('Descuento personalizado'),
+            'name' => 'custom_discount',
+            'required' => false,
+        );
+
+        $id_customer = (int) Tools::getValue('id_customer');
+        $custom_discount = Db::getInstance()->getValue('SELECT custom_discount FROM '._DB_PREFIX_.'customer WHERE id_customer = '.(int)$id_customer);
+
+        $params['fields_value']['custom_discount'] = $custom_discount;
     }
 
     public function getContent()
     {
         $title = 'Configuración de descuentos por cliente';
-        $content = 'Aquí puedes configurar los descuentos personalizados por cliente';
+        $content = '';
+
+        if((bool)Tools::isSubmit('btnSubmit')) {
+            $nameDiscount = Tools::getValue('nombre_descuento');
+            $content = $nameDiscount;
+            // Configuration::updateValue('nombre_descuento', $nameDiscount);
+            // $content .= $this->displayConfirmation($this->l('Configuración actualizada'));
+        }
 
         $this->context->smarty->assign(array(
             'title' => $title,
@@ -59,6 +100,7 @@ class DescuentosPersonalizadosPorUsuario extends Module
 
         return $this->display(__FILE__, 'views/templates/admin/configuration.tpl');
     }
+
 
 }
 ?>
