@@ -33,8 +33,7 @@ class DescuentosPersonalizadosPorUsuario extends Module
 
         return parent::install() 
             && $this->registerHook('displayProductAdditionalInfo')
-            && $this->registerHook('actionAdminCustomersFormModifier')
-            && $this->createAdminTab();
+            && $this->registerHook('actionAdminCustomersFormModifier');
     }
 
     public function uninstall()
@@ -44,22 +43,6 @@ class DescuentosPersonalizadosPorUsuario extends Module
         return parent::uninstall();
     }
 
-    public function createAdminTab()
-    {
-        $tab = new Tab();
-        $tab->active = 1;
-        $tab->class_name = 'AdminDescuentosPersonalizadosPorUsuario';
-        $tab->name = array();
-
-        foreach (Language::getLanguages(true) as $lang) {
-            $tab->name[$lang['id_lang']] = 'Descuentos Personalizados por Usuario';
-        }
-        $contenttab->id_parent = (int) Tab::getIdFromClassName('AdminCustomers');
-        $tab->module = $this->name;
-        $tab->icon = 'discount';
-
-        return $tab->add();
-    }
 
     public function hookDisplayProductAdditionalInfo($params)
     {
@@ -96,13 +79,74 @@ class DescuentosPersonalizadosPorUsuario extends Module
             // Configuration::updateValue('nombre_descuento', $nameDiscount);
             // $content .= $this->displayConfirmation($this->l('Configuración actualizada'));
         }
+        if(Tools::isSubmit('btnSubmit')) {
+            $content .= $this->displayConfirmation($this->l('Configuración actualizada'));
+        }
 
         $this->context->smarty->assign(array(
             'title' => $title,
             'content' => $content
         ));
 
-        return $this->display(__FILE__, 'views/templates/admin/configuration.tpl');
+        $output = $this->display(__FILE__, 'views/templates/admin/configuration.tpl');
+        // return $this->display(__FILE__, 'views/templates/admin/configuration.tpl');
+        return $output.$this->renderForm();
+    }
+
+    protected function renderForm()
+    {
+        $helper = new HelperForm();
+
+        $helper->show_toolbar = false;
+        $helper->table = $this->table;
+        $helper->module = $this;
+        $helper->identifier = $this->identifier;
+        $helper->submit_action = 'btnSubmit';
+
+        $lang = new Language((int)Configuration::get('PS_LANG_DEFAULT'));
+        $helper->default_form_language = $lang->id;
+        
+        $this->fields_form = array();
+        
+        $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
+            .'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
+            
+        $helper->token = Tools::getAdminTokenLite('AdminModules');
+
+        $helper->tpl_vars = array(
+            'fields_value' => $this->getConfigFormValues()
+        );
+
+        return $helper->generateForm(array($this->getConfigForm()));
+    }
+
+    protected function getConfigForm(){
+        return array(
+            'form' => array(
+                'legend' => array(
+                    'title' => $this->l('Configuración de descuentos por cliente'),
+                    'icon' => 'icon-cogs'
+                ),
+                'input' => array(
+                    array(
+                        'type' => 'text',
+                        'label' => $this->l('Nombre del descuento'),
+                        'name' => 'nombre_descuento',
+                        'required' => true
+                    )
+                ),
+                'submit' => array(
+                    'title' => $this->l('Guardar')
+                )
+            )
+        );
+    }
+
+    protected function getConfigFormValues()
+    {
+        return array(
+            'nombre_descuento' => Configuration::get('nombre_descuento', 'My shop')
+        );
     }
 
 
